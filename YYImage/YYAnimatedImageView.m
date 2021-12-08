@@ -129,6 +129,7 @@ typedef NS_ENUM(NSUInteger, YYAnimatedImageType) {
     
     CADisplayLink *_link; ///< ticker for change frame
     NSTimeInterval _time; ///< time after last frame
+    NSTimeInterval _previousTargetTimestamp;
     
     UIImage *_curFrame; ///< current frame to display
     NSUInteger _curIndex; ///< current frame index (from 0)
@@ -236,6 +237,7 @@ typedef NS_ENUM(NSUInteger, YYAnimatedImageType) {
         _requestQueue = [[NSOperationQueue alloc] init];
         _requestQueue.maxConcurrentOperationCount = 1;
         _link = [CADisplayLink displayLinkWithTarget:[_YYImageWeakProxy proxyWithTarget:self] selector:@selector(step:)];
+        [_link setPreferredFramesPerSecond:60];
         if (_runloopMode) {
             [_link addToRunLoop:[NSRunLoop mainRunLoop] forMode:_runloopMode];
         }
@@ -472,7 +474,8 @@ typedef NS_ENUM(NSUInteger, YYAnimatedImageType) {
     
     NSTimeInterval delay = 0;
     if (!_bufferMiss) {
-        _time += link.duration;
+        _time += link.targetTimestamp - _previousTargetTimestamp;
+        _previousTargetTimestamp = link.targetTimestamp;
         delay = [image animatedImageDurationAtIndex:_curIndex];
         if (_time < delay) return;
         _time -= delay;
@@ -577,7 +580,7 @@ typedef NS_ENUM(NSUInteger, YYAnimatedImageType) {
     if (currentAnimatedImageIndex >= _curAnimatedImage.animatedImageFrameCount) return;
     if (_curIndex == currentAnimatedImageIndex) return;
     
-    void (^block)() = ^{
+    void (^block)(void) = ^{
         LOCK(
              [_requestQueue cancelAllOperations];
              [_buffer removeAllObjects];
