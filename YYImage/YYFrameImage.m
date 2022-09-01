@@ -67,7 +67,7 @@ static CGFloat _NSStringPathScale(NSString *string) {
     NSString *firstPath = paths[0];
     NSData *firstData = [NSData dataWithContentsOfFile:firstPath];
     CGFloat scale = _NSStringPathScale(firstPath);
-    UIImage *firstCG = [[[UIImage alloc] initWithData:firstData] yy_imageByDecoded];
+    UIImage *firstCG = [self createImageWith:firstData scale:scale];
     self = [self initWithCGImage:firstCG.CGImage scale:scale orientation:UIImageOrientationUp];
     if (!self) return nil;
     long frameByte = CGImageGetBytesPerRow(firstCG.CGImage) * CGImageGetHeight(firstCG.CGImage);
@@ -93,7 +93,7 @@ static CGFloat _NSStringPathScale(NSString *string) {
     
     NSData *firstData = dataArray[0];
     CGFloat scale = [UIScreen mainScreen].scale;
-    UIImage *firstCG = [[[UIImage alloc] initWithData:firstData] yy_imageByDecoded];
+    UIImage *firstCG = [self createImageWith:firstData scale:scale];;
     self = [self initWithCGImage:firstCG.CGImage scale:scale orientation:UIImageOrientationUp];
     if (!self) return nil;
     long frameByte = CGImageGetBytesPerRow(firstCG.CGImage) * CGImageGetHeight(firstCG.CGImage);
@@ -131,11 +131,11 @@ static CGFloat _NSStringPathScale(NSString *string) {
         NSString *path = _imagePaths[index];
         CGFloat scale = _NSStringPathScale(path);
         NSData *data = [NSData dataWithContentsOfFile:path];
-        return [[UIImage imageWithData:data scale:scale] yy_imageByDecoded];
+        return [self createImageWith:data scale:scale];;
     } else if (_imageDatas) {
         if (index >= _imageDatas.count) return nil;
         NSData *data = _imageDatas[index];
-        return [[UIImage imageWithData:data scale:[UIScreen mainScreen].scale] yy_imageByDecoded];
+        return [self createImageWith:data scale:[UIScreen mainScreen].scale];
     } else {
         return index == 0 ? self : nil;
     }
@@ -145,6 +145,12 @@ static CGFloat _NSStringPathScale(NSString *string) {
     if (index >= _frameDurations.count) return 0;
     NSNumber *num = _frameDurations[index];
     return [num doubleValue];
+}
+
+- (UIImage *)createImageWith:(NSData *)data scale:(CGFloat )scale {
+    YYImageDecoder *decoder = [YYImageDecoder decoderWithData:data scale:scale];
+    YYImageFrame *frame = [decoder frameAtIndex:0 decodeForDisplay:YES];
+    return frame.image;
 }
 
 @end
